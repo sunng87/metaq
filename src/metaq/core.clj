@@ -25,12 +25,13 @@
 (defn metaq-session-factory [^MetaClientConfig config]
   (MetaMessageSessionFactory. config))
 
-(defmacro defproducer [name zkaddr zkroot]
-  `(defonce ~name
-     (let [config# (zookeeper-based-metaq-config ~zkaddr ~zkroot)
-           factory# (metaq-session-factory config#)
-           producer# (.createProducer factory#)]
-       producer#)))
+(defn start-producer
+  "should be started in main function"
+  [zkaddr zkroot]
+  (let [config (zookeeper-based-metaq-config zkaddr zkroot)
+        factory (metaq-session-factory config)
+        producer (.createProducer factory)]
+    producer))
 
 (defn publish [^MessageProducer producer topic]
   (.publish producer topic))
@@ -46,7 +47,7 @@
         (logging/warn e "Error publishing to MQ.")))))
 
 (defmacro defhandler [name executor arg-vec & handler-body]
-  `(defonce ~name
+  `(def ~name
      (let [executor# ~executor]
        (reify MessageListener
          (^void recieveMessages [this# ^Message  msg#]
@@ -58,14 +59,15 @@
          (getExecutor [this]
            executor#)))))
 
-(defmacro defconsumer [name zkaddr zkroot group]
-  `(defonce ~name
-     (let [config# (zookeeper-based-metaq-config ~zkaddr ~zkroot)
-           factory# (metaq-session-factory config#)
-           consumer# (.createConsumer
-                      ^MetaMessageSessionFactory factory#
-                      (ConsumerConfig. ~group))]
-       consumer#)))
+(defn start-consumer
+  "should be started in main function"
+  [zkaddr zkroot group]
+  (let [config (zookeeper-based-metaq-config zkaddr zkroot)
+        factory (metaq-session-factory config)
+        consumer (.createConsumer
+                   ^MetaMessageSessionFactory factory
+                   (ConsumerConfig. group))]
+    consumer))
 
 (defn subscribe [consumer topic handler]
   (.subscribe consumer topic (* 1024 1024) handler))
