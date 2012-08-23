@@ -34,7 +34,8 @@
     producer))
 
 (defn publish [^MessageProducer producer topic]
-  (.publish producer topic))
+  (.publish producer topic)
+  producer)
 
 (defn produce [^MessageProducer producer topic data]
   (try
@@ -44,7 +45,8 @@
         (logging/warn "Error publishing to MQ: " (.getErrorMessage r))))
     (catch MetaClientException e
       (do
-        (logging/warn e "Error publishing to MQ.")))))
+        (logging/warn e "Error publishing to MQ."))))
+  producer)
 
 (defmacro defhandler [name executor arg-vec & handler-body]
   `(def ~name
@@ -70,7 +72,9 @@
     consumer))
 
 (defn subscribe [consumer topic handler]
-  (.subscribe consumer topic (* 1024 1024) handler))
+  (.subscribe consumer topic (* 1024 1024) handler)
+  consumer)
 
 (defn subscribe-done [consumer]
-  (.completeSubscribe consumer))
+  (.completeSubscribe consumer)
+  consumer)
