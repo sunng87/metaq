@@ -38,14 +38,11 @@
   producer)
 
 (defn produce [^MessageProducer producer topic data]
-  (try
-    (let [r (.sendMessage producer (Message. topic data)
-                               (long 10) TimeUnit/SECONDS)]
-      (when-not (.isSuccess r)
-        (logging/warn "Error publishing to MQ: " (.getErrorMessage r))))
-    (catch MetaClientException e
-      (do
-        (logging/warn e "Error publishing to MQ."))))
+  
+  (let [r (.sendMessage producer (Message. topic data)
+                        (long 10) TimeUnit/SECONDS)]
+    (when-not (.isSuccess r)
+      (logging/warn "Error publishing to MQ: " (.getErrorMessage r))))
   producer)
 
 (defmacro defhandler [name executor arg-vec & handler-body]
@@ -53,11 +50,7 @@
      (let [executor# ~executor]
        (reify MessageListener
          (^void recieveMessages [this# ^Message  msg#]
-           (try
-             ((fn ~arg-vec ~@handler-body) (.getData msg#))
-             (catch Exception e#
-               (logging/warn e# "Error processing message: "
-                             (String. (.getData msg#) "UTF-8")))))
+           ((fn ~arg-vec ~@handler-body) (.getData msg#)))
          (getExecutor [this]
            executor#)))))
 
@@ -78,3 +71,4 @@
 (defn subscribe-done [consumer]
   (.completeSubscribe consumer)
   consumer)
+
