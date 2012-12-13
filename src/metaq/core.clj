@@ -50,7 +50,12 @@
      (let [executor# ~executor]
        (reify MessageListener
          (^void recieveMessages [this# ^Message  msg#]
-           ((fn ~arg-vec ~@handler-body) (.getData msg#)))
+           (try
+             ((fn ~arg-vec ~@handler-body) (.getData msg#))
+             (catch Exception e#
+               (logging/warn e# "Error processing message: "
+                             (String. (.getData msg#) "UTF-8"))
+               (throw e#))))
          (getExecutor [this]
            executor#)))))
 
